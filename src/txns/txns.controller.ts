@@ -1,6 +1,18 @@
 import { InjectQueue } from '@nestjs/bull';
-import { Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import type { Queue } from 'bull';
+
+export class TxnBodyDto {
+  signature: string;
+  txn: {
+    from: string;
+    to: string;
+    value: number;
+    gas: number;
+    nonce: number;
+    data: string;
+  };
+}
 
 @Controller('txns')
 export class TxnsController {
@@ -8,20 +20,18 @@ export class TxnsController {
     @InjectQueue('meta_txns') private readonly metaTxnsQueue: Queue,
   ) {}
 
-  @Get()
-  getHello(req): string {
-    console.log(req);
-    return 'Hello World!';
+  @Get(':id')
+  getJobInQueue(@Param('id') id: string) {
+    return this.metaTxnsQueue.getJob(id);
   }
 
   @Post()
-  async sendTxn() {
-    console.log('sending txn');
-    const { id } = await this.metaTxnsQueue.add('proccess', {
-      from: '0xjeet',
-      to: '0xcontract',
-      data: '0x',
-    });
-    return { jobId: id };
+  async sendTxn(@Body() body: TxnBodyDto) {
+    if (!body?.txn || !body.signature) {
+      return { error: 'invalid body' };
+    }
+    const job = await this.metaTxnsQueue.add('proccess', body);
+    console.log('Queue added', job.id);
+    return job;
   }
 }

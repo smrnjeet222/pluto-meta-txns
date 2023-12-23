@@ -1,40 +1,74 @@
-import { Job } from 'bull';
-import { Process, Processor } from '@nestjs/bull';
-import { ethers } from 'ethers';
-import { TxnBodyDto } from './txns.controller';
-import { ConfigService } from '@nestjs/config';
+import { ethers } from './ethers-5.6.esm.min.js';
 
-@Processor('meta_txns')
-export class TxnsConsumer {
-  constructor(private readonly configService: ConfigService) {}
+connectButton.onclick = connect;
+mintBtn.onclick = mint;
 
-  @Process('proccess')
-  handleTxn(job: Job<TxnBodyDto>) {
-    console.log('Processing meta transactions', job.id);
-    console.log(job.data);
+async function connect() {
+  if (typeof window.ethereum !== 'undefined') {
+    try {
+      await ethereum.request({ method: 'eth_requestAccounts' });
+    } catch (error) {
+      console.log(error);
+    }
+    const accounts = await ethereum.request({ method: 'eth_accounts' });
+    console.log(accounts);
+    connectButton.innerHTML = accounts[0];
+  } else {
+    connectButton.innerHTML = 'Please install MetaMask';
+  }
+}
 
-    const rpcUrl = 'https://ethereum-sepolia.publicnode.com';
-    const privateKey = this.configService.get('PRIVATE_KEY');
+async function mint() {
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = await provider.getSigner();
+  const wa = await signer.getAddress();
 
-    const relayer = '0x6631f9d871a35D8e7206f62Dc493bf770Fcf2F1b';
+  const gnft = '0xc4F18031F81DB9b7E005242dFf54688D751484f7';
+  const relayer = '0x6631f9d871a35D8e7206f62Dc493bf770Fcf2F1b';
+  const forwarder = new ethers.Contract(relayer, abi, provider);
 
-    const provider = new ethers.JsonRpcProvider(rpcUrl);
-    const wallet = new ethers.Wallet(privateKey, provider);
+  const nonce = await forwarder.getNonce(wa);
 
-    const forwarder = new ethers.Contract(relayer, abi, provider) as any;
+  const abiCoder = new ethers.utils.AbiCoder();
 
-    const result = forwarder
-      .connect(wallet)
-      .execute(job.data.txn, job.data.signature)
-      .then((tx) => {
-        return tx.hash;
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+  let data = abiCoder.encode(['uint256'], [1]);
+  data = data.slice(2, data.length);
+  const Req = {
+    from: wa,
+    to: gnft,
+    value: 0,
+    gas: 100000,
+    nonce: nonce.toNumber(),
+    data: '0xa0712d68' + data,
+  };
 
-    console.log('completed!!', job.id);
-    return result;
+  let message = ethers.utils.solidityKeccak256(
+    ['address', 'address', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [Req.from, Req.to, Req.value, Req.gas, Req.nonce, Req.data],
+  );
+
+  const arrayifyMessage = await ethers.utils.arrayify(message);
+  const flatSignature = await signer.signMessage(arrayifyMessage);
+  try {
+    const execute = await fetch('http://localhost:3000/txns', {
+      method: 'POST',
+      body: JSON.stringify({
+        txn: Req,
+        signature: flatSignature,
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (execute.ok) {
+      const resp = await execute.json();
+      console.log(resp);
+    } else {
+      alert('Tx failed with error: ' + execute.statusText);
+    }
+  } catch (error) {
+    console.error(error);
   }
 }
 
