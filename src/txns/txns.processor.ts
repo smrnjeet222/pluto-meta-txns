@@ -9,7 +9,7 @@ export class TxnsConsumer {
   constructor(private readonly configService: ConfigService) {}
 
   @Process('proccess')
-  handleTxn(job: Job<TxnBodyDto>) {
+  async handleTxn(job: Job<TxnBodyDto>) {
     console.log('Processing meta transactions', job.id);
     console.log(job.data);
 
@@ -23,18 +23,12 @@ export class TxnsConsumer {
 
     const forwarder = new ethers.Contract(relayer, abi, provider) as any;
 
-    const result = forwarder
+    const result = await forwarder
       .connect(wallet)
-      .execute(job.data.txn, job.data.signature)
-      .then((tx) => {
-        return tx.hash;
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+      .execute(job.data.txn, job.data.signature);
 
-    console.log('completed!!', job.id);
-    return result;
+    console.log('completed!!', job.id, result.hash);
+    return result.hash;
   }
 }
 

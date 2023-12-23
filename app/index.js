@@ -23,23 +23,24 @@ async function mint() {
   const signer = await provider.getSigner();
   const wa = await signer.getAddress();
 
-  const gnft = '0xc4F18031F81DB9b7E005242dFf54688D751484f7';
+  const gnft = '0xE3FB3a743d2481a13D590e2443614435a263D5f0';
   const relayer = '0x6631f9d871a35D8e7206f62Dc493bf770Fcf2F1b';
   const forwarder = new ethers.Contract(relayer, abi, provider);
 
   const nonce = await forwarder.getNonce(wa);
 
-  const abiCoder = new ethers.utils.AbiCoder();
+  // const abiCoder = new ethers.utils.AbiCoder();
 
-  let data = abiCoder.encode(['uint256'], [1]);
-  data = data.slice(2, data.length);
+  // let data = abiCoder.encode(['uint256'], [1]);
+  // data = data.slice(2, data.length);
+
   const Req = {
     from: wa,
     to: gnft,
     value: 0,
-    gas: 100000,
+    gas: 1000000,
     nonce: nonce.toNumber(),
-    data: '0xa0712d68' + data,
+    data: '0x1249c58b',
   };
 
   let message = ethers.utils.solidityKeccak256(

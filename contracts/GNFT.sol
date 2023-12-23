@@ -5,18 +5,20 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract GaslessNFT is ERC721 {
     address immutable _trustedForwarder;
+    uint256 private _nextTokenId;
 
-    event minted(address minter, uint256 amount);
+    event minted(address minter, uint256 id);
 
     constructor(address trustedForwarder) ERC721("Gasless NFT","GNFT") {
         _trustedForwarder = trustedForwarder;
     }
 
-    function mint(uint256 amount) external {
+    function mint() external {
+        uint256 tokenId = _nextTokenId++;
         address sender = msgSender();
 
-        _safeMint(sender, amount);
-        emit minted(sender, amount);
+        _safeMint(sender, tokenId);
+        emit minted(sender, tokenId);
     }
 
     function isTrustedForwarder(address forwarder) public view returns(bool) {
@@ -35,4 +37,3 @@ contract GaslessNFT is ERC721 {
         }
     }
 }
-
