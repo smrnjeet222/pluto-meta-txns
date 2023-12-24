@@ -23,9 +23,15 @@ async function mint() {
   const signer = await provider.getSigner();
   const wa = await signer.getAddress();
 
+  const rpcUrl = 'https://ethereum-sepolia.publicnode.com';
   const gnft = '0xE3FB3a743d2481a13D590e2443614435a263D5f0';
   const relayer = '0x6631f9d871a35D8e7206f62Dc493bf770Fcf2F1b';
-  const forwarder = new ethers.Contract(relayer, abi, provider);
+
+  const forwarder = new ethers.Contract(
+    relayer,
+    abi,
+    new ethers.providers.JsonRpcProvider(rpcUrl),
+  );
 
   const nonce = await forwarder.getNonce(wa);
 

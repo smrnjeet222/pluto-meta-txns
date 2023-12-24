@@ -28,20 +28,6 @@ contract MinimalForwarder is EIP712, Ownable {
         return _nonces[from];
     }
 
-        /**
-     * @dev Returns an Ethereum Signed Message, created from a `hash`. This
-     * produces hash corresponding to the one signed with the
-     * https://eth.wiki/json-rpc/API#eth_sign[`eth_sign`]
-     * JSON-RPC method as part of EIP-191.
-     *
-     * See {recover}.
-     */
-    function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
-        // 32 is the length in bytes of hash,
-        // enforced by the type signature above
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
-    }
-
     function verify(ForwardRequest calldata req, bytes calldata signature) public view returns (bool) {
         bytes32 messagehash = keccak256(
             abi.encodePacked(req.from, req.to, req.value, req.gas, req.nonce, req.data)
